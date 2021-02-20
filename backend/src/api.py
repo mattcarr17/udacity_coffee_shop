@@ -33,17 +33,13 @@ def get_drinks():
     # query all drinks
     drinks = Drink.query.all()
 
-    # if no drinks returned, 404 error
-    if len(drinks) == 0:
-        abort(404)
-
     # format with drink.short()
     formatted_drinks = [drink.short() for drink in drinks]
 
     return jsonify({
         'success': True,
         'drinks': formatted_drinks
-    })
+    }), 200
 
 
 
@@ -57,14 +53,10 @@ def get_drinks():
 '''
 @app.route('/drinks-detail')
 @requires_auth('get:drinks-detail')
-def get_drink_details():
+def get_drink_details(jwt):
 
     # query all drinks
     drinks = Drink.query.all()
-
-    # if no drinks returned, 404 error
-    if len(drinks) == 0:
-        abort(404)
 
     # format with drink.long()
     formatted_drinks = [drink.long() for drink in drinks]
@@ -72,7 +64,7 @@ def get_drink_details():
     return jsonify({
         'success': True,
         'drinks': formatted_drinks
-    })
+    }), 200
 
 
 
@@ -87,12 +79,13 @@ def get_drink_details():
 '''
 @app.route('/drinks', methods=['POST'])
 @requires_auth('post:drinks')
-def create_drink():
+def create_drink(jwt):
 
     body = request.get_json()
 
     title = body.get('title', None)
-    recipe = body.get('recipe', None)
+    recipe = json.dumps(body.get('recipe', None))
+
 
     # if drink title or recipe not given, raise unprocessable error
     if not title or not recipe:
@@ -107,8 +100,8 @@ def create_drink():
     # return success = True and newly created drink
     return jsonify({
         'success': True,
-        'drinks': drink.long()
-    })
+        'drinks': [drink.long()]
+    }), 200
 '''
 @TODO implement endpoint
     PATCH /drinks/<id>
@@ -122,7 +115,7 @@ def create_drink():
 '''
 @app.route('/drinks/<int:drink_id>', methods=['PATCH'])
 @requires_auth('patch:drinks')
-def edit_drink(drink_id):
+def edit_drink(jwt, drink_id):
 
     # query drink with id equal to drink_id
     drink = Drink.query.filter_by(id=drink_id).one_or_none()
@@ -140,14 +133,14 @@ def edit_drink(drink_id):
         drink.title = new_title
     
     if new_recipe:
-        drink.recipe = new_recipe
+        drink.recipe = json.dumps(new_recipe)
     
     drink.update()
 
     return jsonify({
         'success': True,
-        'drinks': drink.long()
-    })
+        'drinks': [drink.long()]
+    }), 200
 
 '''
 @TODO implement endpoint
@@ -161,7 +154,7 @@ def edit_drink(drink_id):
 '''
 @app.route('/drinks/<int:drink_id>', methods=['DELETE'])
 @requires_auth('delete:drinks')
-def delete_drink(drink_id):
+def delete_drink(jwt, drink_id):
 
     # query drink where id equals drink_id
     drink = Drink.query.filter_by(id=drink_id).one_or_none()
@@ -179,7 +172,7 @@ def delete_drink(drink_id):
     return jsonify({
         'success': True,
         'delete': deleted_drink_id
-    })
+    }), 200
 
 ## Error Handling
 '''
@@ -227,4 +220,4 @@ def auth_error(error):
         'success': False,
         'error': error.status_code,
         'message': error.error['description']
-    })
+    }), error.status_code
