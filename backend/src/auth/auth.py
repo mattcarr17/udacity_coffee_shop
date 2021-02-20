@@ -28,16 +28,16 @@ def get_token_auth_header():
     auth_header = request.headers.get('Authorization', None)
     
     # if Authorization Header is not in request, raise error
-    if not auth: 
+    if not auth_header: 
         raise AuthError({
             'code': 'Authorization Header is Missing',
             'description': 'Expected Authorization Header'
         }, 401)
 
-    header_parts = auth.split(' ')
+    header_parts = auth_header.split()
 
     # if header key word is not bearer, raise error
-    elif parts[0].lower() != 'bearer':
+    if header_parts[0].lower() != 'bearer':
         raise AuthError({
             'code': 'Invalid Header',
             'description': 'Header must begin with "Bearer"'
@@ -72,11 +72,12 @@ def check_permissions(permission, payload):
         }, 400)
 
     # check is specific endpoint permission is in payload permissions
-    elif permission not in payload['permissions']:
+    if permission not in payload['permissions']:
         raise AuthError({
             'code': 'Unauthorized',
             'description': 'No valid permissions for this resource'
-        }, 403)
+        }, 401)
+
     
     return True
 
@@ -138,9 +139,9 @@ def verify_decode_jwt(token):
     raise AuthError({
         'code': 'invalid_header',
         'description': 'Unable to find the appropriate key'
-        }, 400)
+        }, 401)
 
-def requires_auth(permission=''):
+def requires_auth(permission=''): # Incorrect permission is being passed
     def requires_auth_decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
